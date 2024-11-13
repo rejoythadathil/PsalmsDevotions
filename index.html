@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Psalms Devotional</title>
+    <script src="https://www.gstatic.com/firebasejs/9.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.9.0/firebase-auth-compat.js"></script>
+    <style>
+        body {
+            font-family: "Monospace", monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f7f9fc;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .auth-container, #devotional-container {
+            max-width: 400px;
+            width: 100%;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .auth-container input, .auth-container button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        #devotional-container {
+            display: none;
+        }
+        #psalm-verses {
+            text-align: left;
+            padding-left: 10px;
+        }
+        .sign-out-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #4a90e2;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .question {
+            font-weight: bold;
+            margin-top: 15px;
+            text-align: left;
+            width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        textarea {
+            width: 90%;
+            height: 80px;
+            margin: 10px 0;
+            border-radius: 5px;
+            padding: 10px;
+            resize: none;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto 0;
+        }
+        .nav-btn, .submit-btn {
+            background-color: #4a90e2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .nav-btn:hover, .submit-btn:hover {
+            background-color: #357abd;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Psalms Devotional</h1>
+
+<div class="auth-container">
+    <h2>Email Sign-Up</h2>
+    <input type="email" id="signUpEmail" placeholder="Email" required>
+    <input type="password" id="signUpPassword" placeholder="Password" required>
+    <button onclick="signUp()">Sign Up</button>
+</div>
+
+<div class="auth-container">
+    <h2>Email Sign-In</h2>
+    <input type="email" id="signInEmail" placeholder="Email" required>
+    <input type="password" id="signInPassword" placeholder="Password" required>
+    <button onclick="signIn()">Sign In</button>
+</div>
+
+<div class="auth-container">
+    <h2>Or</h2>
+    <button onclick="signInWithGoogle()">Sign In with Google</button>
+</div>
+
+<div id="devotional-container">
+    <button class="sign-out-btn" onclick="signOut()">Sign Out</button>
+    <div id="date" style="color: orange; font-weight: bold;">January 1, 2025</div>
+    <div id="theme" style="font-weight: bold; color: blue;">Theme: Hymns and Songs of Praise</div>
+    <div id="psalm-verses">
+        <p>Loading verses...</p>
+    </div>
+
+    <!-- User Questions Section -->
+    <div class="question">
+        Question 1: How do these verses speak to you personally about the theme?
+    </div>
+    <textarea id="answer1" placeholder="Type your response here..."></textarea>
+
+    <div class="question">
+        Question 2: What action or mindset can you take today that aligns with the message of these verses in light of the chosen theme?
+    </div>
+    <textarea id="answer2" placeholder="Type your response here..."></textarea>
+
+    <!-- Submit button to save responses -->
+    <button class="submit-btn" onclick="saveResponses()">Submit</button>
+
+    <!-- Navigation buttons positioned below the questions -->
+    <div class="navigation">
+        <button class="nav-btn" onclick="prevDay()">Previous</button>
+        <button class="nav-btn" onclick="nextDay()">Next</button>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAc85PUikwHtxYkkEE2PtXnLx2oHhGCG2k",
+        authDomain: "psalmsdevotional.firebaseapp.com",
+        projectId: "psalmsdevotional",
+        storageBucket: "psalmsdevotional.firebasestorage.app",
+        messagingSenderId: "884994293203",
+        appId: "1:884994293203:web:a981fdb62aabb242198326"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    function showDevotional() {
+        document.getElementById("devotional-container").style.display = "block";
+        document.querySelectorAll(".auth-container").forEach(container => container.style.display = "none");
+        loadResponses();
+        updateDevotional();
+    }
+
+    const startDate = new Date("2025-01-01");
+    const endDate = new Date("2025-12-31");
+    let currentDate = new Date(startDate);
+
+    async function updateDevotional() {
+        const formattedDate = currentDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+        document.getElementById("date").innerText = formattedDate;
+
+        const themes = [
+            { name: "Hymns and Songs of Praise", start: new Date("2025-01-01"), end: new Date("2025-03-31") },
+            { name: "Imprecatory Psalms", start: new Date("2025-04-01"), end: new Date("2025-06-30") },
+            { name: "Royal Psalms", start: new Date("2025-07-01"), end: new Date("2025-10-31") },
+            { name: "Thanksgiving Psalms", start: new Date("2025-11-01"), end: new Date("2025-12-31") }
+        ];
+
+        const theme = themes.find(t => currentDate >= t.start && currentDate <= t.end).name;
+        document.getElementById("theme").innerText = `Theme: ${theme}`;
+        
+        // Fetch verses logic here (not shown for brevity)
+    }
+
+    // Save responses to localStorage
+    function saveResponses() {
+        const key = `devotional_${currentDate.toISOString().split("T")[0]}`;
+        const answer1 = document.getElementById("answer1").value;
+        const answer2 = document.getElementById("answer2").value;
+        const responses = { answer1, answer2 };
+        localStorage.setItem(key, JSON.stringify(responses));
+        alert("Responses saved!");
+    }
+
+    // Load responses from localStorage
+    function loadResponses() {
+        const key = `devotional_${currentDate.toISOString().split("T")[0]}`;
+        const responses = JSON.parse(localStorage.getItem(key)) || { answer1: "", answer2: "" };
+        document.getElementById("answer1").value = responses.answer1;
+        document.getElementById("answer2").value = responses.answer2;
+    }
+
+    function prevDay() {
+        currentDate.setDate(currentDate.getDate() - 1);
+        if (currentDate < startDate) currentDate = new Date(endDate);
+        loadResponses();
+        updateDevotional();
+    }
+
+    function nextDay() {
+        currentDate.setDate(currentDate.getDate() + 1);
+        if (currentDate > endDate) currentDate = new Date(startDate);
+        loadResponses();
+        updateDevotional();
+    }
+</script>
+
+</body>
+</html>
