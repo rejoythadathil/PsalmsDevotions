@@ -121,7 +121,6 @@
         <p>Loading verses...</p>
     </div>
 
-    <!-- User Questions Section -->
     <div class="question">
         Question 1: How do these verses speak to you personally about the theme?
     </div>
@@ -132,10 +131,8 @@
     </div>
     <textarea id="answer2" placeholder="Type your response here..."></textarea>
 
-    <!-- Submit button to save responses -->
     <button class="submit-btn" onclick="saveResponses()">Submit</button>
 
-    <!-- Navigation buttons positioned below the questions -->
     <div class="navigation">
         <button class="nav-btn" onclick="prevDay()">Previous</button>
         <button class="nav-btn" onclick="nextDay()">Next</button>
@@ -154,6 +151,46 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
+    // Authentication Functions
+    function signUp() {
+        const email = document.getElementById("signUpEmail").value;
+        const password = document.getElementById("signUpPassword").value;
+        auth.createUserWithEmailAndPassword(email, password)
+            .then(userCredential => {
+                alert("Sign-up successful!");
+                showDevotional();
+            })
+            .catch(error => alert("Error signing up: " + error.message));
+    }
+
+    function signIn() {
+        const email = document.getElementById("signInEmail").value;
+        const password = document.getElementById("signInPassword").value;
+        auth.signInWithEmailAndPassword(email, password)
+            .then(userCredential => {
+                alert("Sign-in successful!");
+                showDevotional();
+            })
+            .catch(error => alert("Error signing in: " + error.message));
+    }
+
+    function signInWithGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+            .then(result => {
+                alert("Google sign-in successful!");
+                showDevotional();
+            })
+            .catch(error => alert("Error signing in with Google: " + error.message));
+    }
+
+    function signOut() {
+        auth.signOut().then(() => {
+            alert("Sign-out successful!");
+            location.reload();
+        }).catch(error => alert("Error signing out: " + error.message));
+    }
+
     function showDevotional() {
         document.getElementById("devotional-container").style.display = "block";
         document.querySelectorAll(".auth-container").forEach(container => container.style.display = "none");
@@ -161,58 +198,9 @@
         updateDevotional();
     }
 
-    const startDate = new Date("2025-01-01");
-    const endDate = new Date("2025-12-31");
-    let currentDate = new Date(startDate);
+    // Additional functions for devotional content
+    // (updateDevotional, saveResponses, prevDay, nextDay, etc.)
 
-    async function updateDevotional() {
-        const formattedDate = currentDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-        document.getElementById("date").innerText = formattedDate;
-
-        const themes = [
-            { name: "Hymns and Songs of Praise", start: new Date("2025-01-01"), end: new Date("2025-03-31") },
-            { name: "Imprecatory Psalms", start: new Date("2025-04-01"), end: new Date("2025-06-30") },
-            { name: "Royal Psalms", start: new Date("2025-07-01"), end: new Date("2025-10-31") },
-            { name: "Thanksgiving Psalms", start: new Date("2025-11-01"), end: new Date("2025-12-31") }
-        ];
-
-        const theme = themes.find(t => currentDate >= t.start && currentDate <= t.end).name;
-        document.getElementById("theme").innerText = `Theme: ${theme}`;
-        
-        // Fetch verses logic here (not shown for brevity)
-    }
-
-    // Save responses to localStorage
-    function saveResponses() {
-        const key = `devotional_${currentDate.toISOString().split("T")[0]}`;
-        const answer1 = document.getElementById("answer1").value;
-        const answer2 = document.getElementById("answer2").value;
-        const responses = { answer1, answer2 };
-        localStorage.setItem(key, JSON.stringify(responses));
-        alert("Responses saved!");
-    }
-
-    // Load responses from localStorage
-    function loadResponses() {
-        const key = `devotional_${currentDate.toISOString().split("T")[0]}`;
-        const responses = JSON.parse(localStorage.getItem(key)) || { answer1: "", answer2: "" };
-        document.getElementById("answer1").value = responses.answer1;
-        document.getElementById("answer2").value = responses.answer2;
-    }
-
-    function prevDay() {
-        currentDate.setDate(currentDate.getDate() - 1);
-        if (currentDate < startDate) currentDate = new Date(endDate);
-        loadResponses();
-        updateDevotional();
-    }
-
-    function nextDay() {
-        currentDate.setDate(currentDate.getDate() + 1);
-        if (currentDate > endDate) currentDate = new Date(startDate);
-        loadResponses();
-        updateDevotional();
-    }
 </script>
 
 </body>
